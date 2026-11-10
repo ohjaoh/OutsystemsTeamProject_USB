@@ -1,0 +1,1605 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ODC 공통 동적 검증 & 에러코드 Service Action 가이드</title><style>:root{--bg:#f5f6f9;--card:#fff;--fg:#1f2430;--mut:#5b6475;--line:#dfe3ea;--acc:#e8402a;--acc2:#1f5fbf;--wire:#9aa4b2}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;font-size:15px}
+header{background:linear-gradient(120deg,#c8321f,#e8402a 60%,#f07a4a);color:#fff;padding:24px 32px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+header h1{margin:0;font-size:23px} header p{margin:6px 0 0;opacity:.92;font-size:14px}
+#collapseAll{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+#collapseAll:hover{background:rgba(255,255,255,.3)}
+.wrap{display:grid;grid-template-columns:250px 1fr;max-width:1600px;margin:0 auto}
+nav{position:sticky;top:0;height:100vh;overflow:auto;padding:18px 12px;border-right:1px solid var(--line);background:#fff;font-size:13px}
+nav ul{list-style:none;padding-left:10px;margin:0} nav>div>ul{padding-left:0}
+nav a{display:block;padding:3px 8px;color:var(--mut);text-decoration:none;border-radius:6px}
+nav a:hover,nav a.on{background:#fdece9;color:var(--acc)}
+nav input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;font:inherit}
+main{padding:20px 36px 80px;min-width:0}
+h2{margin:40px 0 14px;padding:12px 16px;background:var(--card);border-left:5px solid var(--acc);border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.05);font-size:20px}
+h3{margin:30px 0 10px;font-size:17px;color:var(--acc2)} h3::before{content:"▸ ";color:var(--acc)}
+main>table,.structs table,.sg table{border-collapse:collapse}
+main>table{width:100%;margin:12px 0;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.05);font-size:14px;display:block;overflow-x:auto}
+main>table th{background:#2b3240;color:#fff;text-align:left;padding:8px 10px;white-space:nowrap}
+main>table td{padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+main>table tr:nth-child(even) td{background:#fafbfc}
+td.c{text-align:center;color:var(--acc)}
+code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.9em;background:#eef1f5;padding:1px 5px;border-radius:4px;color:#b3261e}
+pre{position:relative;background:#0f1724;color:#e6edf3;padding:16px 18px;border-radius:10px;overflow:auto;font-size:13px}
+pre code{background:none;color:inherit;padding:0}
+.cp{position:absolute;top:8px;right:8px;background:#2d3748;color:#cbd5e0;border:0;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+blockquote{margin:12px 0;padding:10px 16px;background:#fff7e6;border-left:4px solid #f0a020;border-radius:6px;color:#5a4410} blockquote p{margin:4px 0}
+.b{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.err{background:#fde2df;color:#b3261e}.warn{background:#fff1cc;color:#8a5a00}.ok{background:#dff3e4;color:#1e6b34}
+hr{border:0;border-top:1px dashed var(--line);margin:30px 0}
+#top{position:fixed;right:20px;bottom:20px;background:var(--acc);color:#fff;border:0;border-radius:50%;width:44px;height:44px;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:9}
+.ic{flex:none;display:inline-block;vertical-align:middle}
+
+/* 범례 */
+.lg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;background:#fff;padding:14px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.li{display:flex;gap:10px;align-items:center;font-size:13px}.li span{display:block;color:var(--mut);font-size:12px}
+
+/* 아키텍처 */
+.arch{display:grid;grid-template-columns:1fr 90px 1fr;gap:12px;align-items:center}
+.appbox{background:#fff;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-top:4px solid #0e93a3}
+.appbox.biz{border-top-color:#6d4bd1}
+.abh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;margin-bottom:8px}.abh small{color:var(--mut);font-weight:400}
+.grp{margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.grp b{width:100%;font-size:12px;color:var(--mut)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#f3f5f8;border:1px solid var(--line);border-radius:7px;padding:3px 9px 3px 4px;font-size:13px}
+.dep{text-align:center;color:var(--mut);font-size:13px;font-weight:600}
+.pflow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#fff;padding:14px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.ps{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:110px;padding:6px}.ps b{font-size:13px;margin-top:4px}.ps small{color:var(--mut);font-size:11.5px}
+.arr{color:var(--wire);font-size:20px}
+.structs{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.st{background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);overflow:hidden}
+.sth{display:flex;align-items:center;gap:8px;font-weight:700;padding:8px 12px;background:#f4eefa;border-bottom:1px solid var(--line)}
+.st table{width:100%;font-size:13px}.st td{padding:5px 10px;border-top:1px solid #f0f2f5}
+
+/* Action 카드 */
+.act{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin:16px 0 26px;border-top:4px solid #6d4bd1;overflow:hidden}
+.act.k-service,.act.k-rest{border-top-color:#0e93a3}.act.k-client,.act.k-function{border-top-color:#9a72ee}
+.ah{display:flex;align-items:center;gap:10px;padding:12px 16px 4px}
+.an{font-size:18px;font-weight:800;font-family:"JetBrains Mono",Consolas,monospace}
+.ak{font-family:inherit;font-size:11.5px;font-weight:600;background:#eef1f5;color:var(--mut);border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:middle}
+.aa{font-size:12.5px;color:var(--mut)}
+.tg{margin-left:auto;background:#f3f5f8;border:1px solid var(--line);border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
+.ad{padding:2px 16px 8px;color:#3a4252;font-size:14px}
+.sgs{display:flex;flex-wrap:wrap;gap:10px;padding:0 16px 12px}
+.sg{flex:1 1 260px;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+.sgt{font-weight:700;font-size:12px;padding:5px 10px}
+.sg.in .sgt{background:#e8f1fd;color:#1f5fbf}.sg.out .sgt{background:#e6f6ef;color:#17794a}.sg.loc .sgt{background:#f1f2f5;color:#5b6475}
+.sg table{width:100%}.sg td,.st td{padding:4px 10px;border-top:1px solid #f0f2f5;vertical-align:top}
+.pn{font-family:"JetBrains Mono",Consolas,monospace;font-weight:700;white-space:nowrap}.pt{color:#6d4bd1;white-space:nowrap}.pd{color:var(--mut)}
+.fl{display:flex;flex-wrap:wrap;gap:18px;padding:14px 16px 18px;background:repeating-linear-gradient(0deg,#fafbfd,#fafbfd 19px,#f1f3f7 20px),#fafbfd;background-size:20px 20px;background-image:radial-gradient(#dfe3ea 1px,transparent 1px);border-top:1px solid var(--line);overflow-x:auto}
+.lane{flex:0 1 auto;min-width:0}
+.lt{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.lane.hdl{border-left:2px dashed #e7a39d;padding-left:18px}.lane.hdl .lt{color:#b3261e;text-transform:none}
+
+/* 노드 & 연결선 */
+.seq{display:flex;flex-direction:column;align-items:flex-start}
+.step{position:relative;padding-top:18px}
+.seq>.step:first-child{padding-top:0}
+.seq>.step:not(:first-child)::before{content:"";position:absolute;left:17px;top:0;height:18px;border-left:2px solid var(--wire)}
+.seq>.step:not(:first-child)::after{content:"";position:absolute;left:13px;top:12px;border:5px solid transparent;border-top:6px solid var(--wire)}
+.nd{display:flex;align-items:flex-start;gap:10px}
+.bx{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px;min-width:150px;max-width:640px;box-shadow:0 1px 1px rgba(0,0,0,.03)}
+.hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ty{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.03em}
+.nm{font-weight:700;font-size:14px;font-family:"JetBrains Mono",Consolas,monospace}
+.anc{font-size:11px;background:#fff1cc;color:#8a5a00;border-radius:999px;padding:0 7px}
+.pp{margin-top:4px;font-size:12.5px;border-collapse:collapse;width:100%}
+.pp th{text-align:left;color:#5b6475;font-weight:600;padding:2px 10px 2px 0;white-space:nowrap;vertical-align:top;font-family:"JetBrains Mono",Consolas,monospace}
+.pp td{font-family:"JetBrains Mono",Consolas,monospace;padding:2px 0;color:#1f2430;word-break:break-word}
+.cond{font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px;background:#fff8dc;border:1px solid #f1dc8a;border-radius:6px;padding:3px 8px;margin-top:4px}
+.s{color:#b3261e}.k{color:#1f5fbf;font-weight:700}
+.nt{font-size:12px;color:#7a5b00;background:#fffbea;border-radius:5px;padding:2px 8px;margin-top:4px}
+.t-goto .bx{background:#f3f4f7;border-style:dashed}
+.t-end .bx,.t-start .bx{min-width:0;padding:6px 12px}
+.t-raise .bx{border-color:#f0b4ad;background:#fff6f5}
+
+/* 분기 */
+.br{display:flex;gap:12px;margin:10px 0 0 17px;padding-left:22px;border-left:2px solid var(--wire);position:relative;align-items:flex-start}
+.col{border:1px dashed #c9d0db;border-radius:10px;padding:8px 10px 10px;background:rgba(255,255,255,.85);min-width:170px}
+.bl{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:1px 10px;margin-bottom:6px}
+.col.y>.bl{background:#dff3e4;color:#17794a}.col.n>.bl{background:#fde2df;color:#b3261e}
+.col.c>.bl{background:#fff1cc;color:#8a5a00}.col.o>.bl{background:#e9ecf1;color:#5b6475}
+.col>.cond{margin:0 0 8px}
+.pass{font-size:12px;color:var(--mut);padding:4px 2px}
+.cycle{margin:10px 0 0 17px;border:2px dashed #16a38a;border-radius:12px;padding:8px 12px 10px;background:rgba(236,250,246,.85)}
+.cyl,.cyf{font-size:12px;font-weight:700;color:#0f7d69}.cyl{margin-bottom:8px}.cyf{margin-top:8px}
+
+/* 접기 */
+.act.collapsed .pp,.act.collapsed .nt,.act.collapsed .sgs,.act.collapsed .cond{display:none}
+.act.collapsed .bx{min-width:0}
+
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0}main{padding:14px}.arch{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}}
+@media print{nav,#top,.cp,#collapseAll,.tg{display:none}.wrap{display:block}.act{break-inside:auto}}
+
+.br{flex-wrap:nowrap}.col{flex:0 0 auto}.lane{flex:0 0 auto}
+.br.vert{flex-direction:column;gap:10px}
+.br.vert>.col{position:relative}
+.br.vert>.col::before{content:"";position:absolute;left:-24px;top:16px;width:22px;border-top:2px solid var(--wire)}
+.br:not(.vert)>.col:first-child::before{content:"";position:absolute}
+.sg table{table-layout:auto}.pd{word-break:keep-all;overflow-wrap:anywhere;min-width:90px}
+</style></head><body>
+<header><div><h1>ODC 공통 동적 검증 &amp; 에러코드 Service Action 가이드</h1>
+<p>검증 규칙·에러코드를 관리 화면에서 등록 → 배포 없이 반영 · Action Flow를 위젯 순서대로 따라 만들기</p></div>
+<button id="collapseAll">속성 모두 접기</button></header>
+<div class="wrap"><nav><input id="q" placeholder="목차 검색…"><div class="toc">
+<ul>
+<li><a href="#목차">목차</a></li>
+<li><a href="#0-아이콘-범례">0. 아이콘 범례</a></li>
+<li><a href="#1-전체-구조">1. 전체 구조</a></li>
+<li><a href="#2-앱-구성">2. 앱 구성</a></li>
+<li><a href="#3-데이터-모델">3. 데이터 모델</a><ul>
+<li><a href="#31-errorcode-entity">3.1 ErrorCode (Entity)</a></li>
+<li><a href="#32-validationrule-entity">3.2 ValidationRule (Entity)</a></li>
+<li><a href="#33-ruleoperator-static-entity">3.3 RuleOperator (Static Entity)</a></li>
+<li><a href="#34-ruledatatype-static-entity">3.4 RuleDataType (Static Entity)</a></li>
+<li><a href="#35-validationrulehistory-entity-권장">3.5 ValidationRuleHistory (Entity, 권장)</a></li>
+</ul>
+</li>
+<li><a href="#4-structure-정의">4. Structure 정의</a></li>
+<li><a href="#5-공개-service-action">5. 공개 Service Action</a><ul>
+<li><a href="#51-geterrormessage">5.1 GetErrorMessage</a></li>
+<li><a href="#52-validatebyrules--핵심">5.2 ValidateByRules ★ 핵심</a></li>
+<li><a href="#53-getcustomchecks">5.3 GetCustomChecks</a></li>
+<li><a href="#54-geterrorcodelist-클라이언트-캐시용-선택">5.4 GetErrorCodeList (클라이언트 캐시용, 선택)</a></li>
+</ul>
+</li>
+<li><a href="#6-내부-server-action-헬퍼">6. 내부 Server Action (헬퍼)</a><ul>
+<li><a href="#61-findfieldvalue">6.1 FindFieldValue</a></li>
+<li><a href="#62-comparevalues">6.2 CompareValues</a></li>
+<li><a href="#63-evaluaterule">6.3 EvaluateRule</a></li>
+<li><a href="#64-buildmessageparams">6.4 BuildMessageParams</a></li>
+<li><a href="#65-splittext">6.5 SplitText</a></li>
+</ul>
+</li>
+<li><a href="#7-소비-앱-공통-래퍼">7. 소비 앱 공통 래퍼</a><ul>
+<li><a href="#71-user-exception">7.1 User Exception</a></li>
+<li><a href="#72-runvalidation-server-action">7.2 RunValidation (Server Action)</a></li>
+<li><a href="#73-validateorraise-server-action--화면이-아닌-곳timer-rest-배치용">7.3 ValidateOrRaise (Server Action) — 화면이 아닌 곳(Timer, REST, 배치)용</a></li>
+<li><a href="#74-getfielderror-client-action-function--yes">7.4 GetFieldError (Client Action, Function = Yes)</a></li>
+<li><a href="#75-joinerrormessages-client-action-function--yes">7.5 JoinErrorMessages (Client Action, Function = Yes)</a></li>
+</ul>
+</li>
+<li><a href="#8-화면-적용-예시-주문-저장">8. 화면 적용 예시 (주문 저장)</a><ul>
+<li><a href="#81-등록할-규칙-관리-화면에서-입력">8.1 등록할 규칙 (관리 화면에서 입력)</a></li>
+<li><a href="#82-server-action-saveorder-order-app">8.2 Server Action SaveOrder (Order App)</a></li>
+<li><a href="#83-client-action-saveonclick-화면">8.3 Client Action SaveOnClick (화면)</a></li>
+</ul>
+</li>
+<li><a href="#9-관리-화면">9. 관리 화면</a></li>
+<li><a href="#10-운영-규칙--주의사항">10. 운영 규칙 &amp; 주의사항</a><ul>
+<li><a href="#101-fields-값-포맷-반드시-통일">10.1 Fields 값 포맷 (반드시 통일)</a></li>
+<li><a href="#102-명명-규칙">10.2 명명 규칙</a></li>
+<li><a href="#103-배포-vs-관리화면-반영-범위">10.3 배포 vs 관리화면 반영 범위</a></li>
+<li><a href="#104-환경stage-데이터">10.4 환경(Stage) 데이터</a></li>
+<li><a href="#105-기타">10.5 기타</a></li>
+</ul>
+</li>
+<li><a href="#11-구현-체크리스트">11. 구현 체크리스트</a></li>
+</ul>
+</div>
+</nav><main><h1 id="odc-공통-동적-검증validation--에러코드-service-action-가이드">ODC 공통 동적 검증(Validation) &amp; 에러코드 Service Action 가이드</h1>
+<blockquote>
+<p>목적: <strong>검증 규칙과 에러코드를 관리 화면(Entity)에서 등록·수정</strong>하고, 각 앱/화면은 <strong>공통 Service Action 한 번 호출</strong>만으로 검증하도록 만든다.
+최초 1회 "검증 호출 지점"만 배포하면 이후 규칙 추가·수정·비활성화는 <strong>배포 없이</strong> 반영된다.</p>
+</blockquote>
+<hr />
+<h2 id="목차">목차</h2>
+<ol>
+<li><a href="#1-전체-구조">전체 구조</a></li>
+<li><a href="#2-앱-구성">앱 구성</a></li>
+<li><a href="#3-데이터-모델">데이터 모델 (Entity / Static Entity)</a></li>
+<li><a href="#4-structure-정의">Structure 정의</a></li>
+<li><a href="#5-공개-service-action">공개 Service Action</a></li>
+<li><a href="#6-내부-server-action-헬퍼">내부 Server Action (헬퍼)</a></li>
+<li><a href="#7-소비-앱-공통-래퍼">소비 앱 공통 래퍼</a></li>
+<li><a href="#8-화면-적용-예시-주문-저장">화면 적용 예시 (주문 저장)</a></li>
+<li><a href="#9-관리-화면">관리 화면</a></li>
+<li><a href="#10-운영-규칙--주의사항">운영 규칙 &amp; 주의사항</a></li>
+<li><a href="#11-구현-체크리스트">구현 체크리스트</a></li>
+</ol>
+<hr />
+<h2 id="0-아이콘-범례">0. 아이콘 범례</h2>
+<blockquote>
+<p>Service Studio 위젯 모양을 참고해 단순화한 아이콘입니다. 각 Action 카드는 <strong>위에서 아래로 Service Studio 캔버스에 그대로 끌어다 놓는 순서</strong>이며, 노드 이름(굵은 글씨)은 Label로 쓰면 됩니다.</p>
+</blockquote>
+<div class="flowmount" data-id="LEGEND"></div>
+
+<h2 id="1-전체-구조">1. 전체 구조</h2>
+<div class="arch">
+<div class="appbox core"><div class="abh"><span data-ic="k_service" data-s="28"></span> CommonValidation <small>App</small></div>
+ <div class="grp"><b>Entity</b><span class="chip"><span data-ic="aggregate" data-s="20"></span>ErrorCode</span><span class="chip"><span data-ic="aggregate" data-s="20"></span>ValidationRule</span><span class="chip"><span data-ic="aggregate" data-s="20"></span>ValidationRuleHistory</span></div>
+ <div class="grp"><b>Static Entity</b><span class="chip"><span data-ic="entity" data-s="20"></span>RuleOperator</span><span class="chip"><span data-ic="entity" data-s="20"></span>RuleDataType</span></div>
+ <div class="grp"><b>Service Action</b><span class="chip"><span data-ic="service" data-s="20"></span>ValidateByRules ★</span><span class="chip"><span data-ic="service" data-s="20"></span>GetErrorMessage</span><span class="chip"><span data-ic="service" data-s="20"></span>GetCustomChecks</span><span class="chip"><span data-ic="service" data-s="20"></span>GetErrorCodeList</span></div>
+ <div class="grp"><b>Server Action (내부)</b><span class="chip"><span data-ic="server" data-s="20"></span>GetErrorMessageCore</span><span class="chip"><span data-ic="server" data-s="20"></span>EvaluateRule</span><span class="chip"><span data-ic="server" data-s="20"></span>CompareValues</span><span class="chip"><span data-ic="server" data-s="20"></span>FindFieldValue</span><span class="chip"><span data-ic="server" data-s="20"></span>BuildMessageParams</span><span class="chip"><span data-ic="server" data-s="20"></span>SplitText</span></div>
+ <div class="grp"><b>Screen</b><span class="chip"><span data-ic="destination" data-s="20"></span>에러코드 관리</span><span class="chip"><span data-ic="destination" data-s="20"></span>검증 규칙 관리</span><span class="chip"><span data-ic="destination" data-s="20"></span>규칙 테스트</span></div>
+</div>
+<div class="dep">◀<br>Dependency<br><small>Service Action 호출</small></div>
+<div class="appbox biz"><div class="abh"><span data-ic="k_server" data-s="28"></span> 업무 App <small>Order, Member …</small></div>
+ <div class="grp"><b>Server Action</b><span class="chip"><span data-ic="server" data-s="20"></span>RunValidation</span><span class="chip"><span data-ic="server" data-s="20"></span>ValidateOrRaise</span><span class="chip"><span data-ic="server" data-s="20"></span>Check_xxx (CUSTOM)</span><span class="chip"><span data-ic="server" data-s="20"></span>SaveOrder 등 저장 액션</span></div>
+ <div class="grp"><b>Exception</b><span class="chip"><span data-ic="raise" data-s="20"></span>BusinessException</span></div>
+ <div class="grp"><b>Client Function</b><span class="chip"><span data-ic="k_function" data-s="20"></span>GetFieldError</span><span class="chip"><span data-ic="k_function" data-s="20"></span>JoinErrorMessages</span></div>
+</div></div>
+
+<p><strong>처리 흐름</strong></p>
+<div class="pflow"><div class="ps"><span data-ic="client" data-s="30"></span><b>화면 Save 클릭</b><small>SaveOnClick</small></div><span class="arr">➜</span><div class="ps"><span data-ic="server" data-s="30"></span><b>SaveOrder</b><small>Fields(Key/Value) 구성</small></div><span class="arr">➜</span><div class="ps"><span data-ic="server" data-s="30"></span><b>RunValidation</b><small>CUSTOM 검사 → #검사명 추가</small></div><span class="arr">➜</span><div class="ps"><span data-ic="service" data-s="30"></span><b>ValidateByRules</b><small>규칙 조회·평가·메시지</small></div><span class="arr">➜</span><div class="ps"><span data-ic="if" data-s="30"></span><b>IsValid?</b><small>실패면 저장 안 함</small></div><span class="arr">➜</span><div class="ps"><span data-ic="message" data-s="30"></span><b>화면 표시</b><small>Message / 필드별 메시지</small></div></div>
+
+<hr />
+<h2 id="2-앱-구성">2. 앱 구성</h2>
+<table>
+<thead>
+<tr>
+<th>구분</th>
+<th>이름</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>공통 App</td>
+<td><code>CommonValidation</code></td>
+<td>Entity·Service Action·관리 화면 보유. <strong>ODC Library에는 Entity를 둘 수 없으므로 App으로 생성</strong></td>
+</tr>
+<tr>
+<td>업무 App</td>
+<td><code>Order</code>, <code>Member</code> 등</td>
+<td><code>CommonValidation</code>의 Service Action을 Dependency로 추가</td>
+</tr>
+<tr>
+<td>Role</td>
+<td><code>ValidationAdmin</code></td>
+<td>관리 화면 접근 권한</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Service Action은 <strong>네트워크 호출 + 별도 트랜잭션</strong>으로 실행된다. 저장 1회당 <code>RunValidation</code> 1회만 호출하도록 설계한다.</p>
+</blockquote>
+<hr />
+<h2 id="3-데이터-모델">3. 데이터 모델</h2>
+<h3 id="31-errorcode-entity">3.1 ErrorCode (Entity)</h3>
+<table>
+<thead>
+<tr>
+<th>속성</th>
+<th>타입</th>
+<th>필수</th>
+<th>설명 / 예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>Long Integer (Auto)</td>
+<td class="c">●</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>Code</td>
+<td>Text(30)</td>
+<td class="c">●</td>
+<td><code>ORD-1001</code></td>
+</tr>
+<tr>
+<td>Locale</td>
+<td>Text(10)</td>
+<td class="c">●</td>
+<td><code>ko-KR</code>, <code>en-US</code></td>
+</tr>
+<tr>
+<td>Message</td>
+<td>Text(500)</td>
+<td class="c">●</td>
+<td><code>주문수량은 {0}개를 초과할 수 없습니다. (입력: {1})</code></td>
+</tr>
+<tr>
+<td>Severity</td>
+<td>Text(10)</td>
+<td class="c">●</td>
+<td><code>Error</code> / <code>Warning</code> / <code>Info</code></td>
+</tr>
+<tr>
+<td>HttpStatus</td>
+<td>Integer</td>
+<td></td>
+<td>REST 응답용. 기본 400</td>
+</tr>
+<tr>
+<td>Description</td>
+<td>Text(500)</td>
+<td></td>
+<td>관리자용 설명</td>
+</tr>
+<tr>
+<td>IsActive</td>
+<td>Boolean</td>
+<td class="c">●</td>
+<td>기본 True</td>
+</tr>
+<tr>
+<td>UpdatedBy / UpdatedOn</td>
+<td>Text / DateTime</td>
+<td></td>
+<td>변경 추적</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Unique Index</strong>: <code>Code + Locale</code></li>
+</ul>
+<p><strong>필수 시스템 코드 (반드시 등록)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Message (ko-KR)</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SYS-0001</code></td>
+<td>등록되지 않은 오류가 발생했습니다. ({0})</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>SYS-0002</code></td>
+<td>검증 규칙 설정 오류입니다. (규칙 ID: {0}, 항목: {1})</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>SYS-0003</code></td>
+<td>사용자 정의 검사 결과가 없습니다. ({0})</td>
+<td><span class="b err">Error</span></td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-validationrule-entity">3.2 ValidationRule (Entity)</h3>
+<table>
+<thead>
+<tr>
+<th>속성</th>
+<th>타입</th>
+<th>필수</th>
+<th>설명 / 예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Id</td>
+<td>Long Integer (Auto)</td>
+<td class="c">●</td>
+<td>PK</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>Text(50)</td>
+<td class="c">●</td>
+<td>검증 시점. <code>ORDER.SAVE</code> (규칙: <code>앱.동작</code>)</td>
+</tr>
+<tr>
+<td>FieldName</td>
+<td>Text(50)</td>
+<td class="c">●</td>
+<td>Fields의 Key. <code>Quantity</code></td>
+</tr>
+<tr>
+<td>FieldLabel</td>
+<td>Text(100)</td>
+<td></td>
+<td>메시지용 표시명. <code>주문수량</code></td>
+</tr>
+<tr>
+<td>DataType</td>
+<td>Text(20) → RuleDataType</td>
+<td class="c">●</td>
+<td><code>Text</code>/<code>Integer</code>/<code>Decimal</code>/<code>Date</code>/<code>DateTime</code>/<code>Boolean</code></td>
+</tr>
+<tr>
+<td>Operator</td>
+<td>Text(20) → RuleOperator</td>
+<td class="c">●</td>
+<td>3.3 참고</td>
+</tr>
+<tr>
+<td>CompareValue</td>
+<td>Text(500)</td>
+<td></td>
+<td>비교값. <code>100</code>, <code>A,B,C</code>, <code>1,100</code>, <code>CHECK_STOCK</code></td>
+</tr>
+<tr>
+<td>CompareField</td>
+<td>Text(50)</td>
+<td></td>
+<td>다른 필드와 비교 시 그 필드명 (CompareValue보다 우선)</td>
+</tr>
+<tr>
+<td>ErrorCode</td>
+<td>Text(30)</td>
+<td class="c">●</td>
+<td><code>ORD-1001</code></td>
+</tr>
+<tr>
+<td>MessageParams</td>
+<td>Text(200)</td>
+<td></td>
+<td><code>{0},{1}...</code>에 넣을 토큰. 콤마 구분 (6.4 참고)</td>
+</tr>
+<tr>
+<td>Sequence</td>
+<td>Integer</td>
+<td class="c">●</td>
+<td>실행 순서 (10 단위 권장)</td>
+</tr>
+<tr>
+<td>StopOnFail</td>
+<td>Boolean</td>
+<td class="c">●</td>
+<td>위반 시 이후 규칙 중단</td>
+</tr>
+<tr>
+<td>IsActive</td>
+<td>Boolean</td>
+<td class="c">●</td>
+<td>사용 여부</td>
+</tr>
+<tr>
+<td>Remark</td>
+<td>Text(500)</td>
+<td></td>
+<td>관리자 메모</td>
+</tr>
+<tr>
+<td>UpdatedBy / UpdatedOn</td>
+<td>Text / DateTime</td>
+<td></td>
+<td>변경 추적</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Index</strong>: <code>Context + IsActive + Sequence</code></li>
+</ul>
+<h3 id="33-ruleoperator-static-entity">3.3 RuleOperator (Static Entity)</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>의미</th>
+<th>CompareValue 형식</th>
+<th>DataType 사용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EQ</code></td>
+<td>같다</td>
+<td>값</td>
+<td class="c">●</td>
+</tr>
+<tr>
+<td><code>NE</code></td>
+<td>다르다</td>
+<td>값</td>
+<td class="c">●</td>
+</tr>
+<tr>
+<td><code>GT</code></td>
+<td>초과</td>
+<td>값</td>
+<td>Integer/Decimal/Date/DateTime</td>
+</tr>
+<tr>
+<td><code>GE</code></td>
+<td>이상</td>
+<td>값</td>
+<td>〃</td>
+</tr>
+<tr>
+<td><code>LT</code></td>
+<td>미만</td>
+<td>값</td>
+<td>〃</td>
+</tr>
+<tr>
+<td><code>LE</code></td>
+<td>이하</td>
+<td>값</td>
+<td>〃</td>
+</tr>
+<tr>
+<td><code>BETWEEN</code></td>
+<td>범위 (경계 포함)</td>
+<td><code>최소,최대</code></td>
+<td>〃</td>
+</tr>
+<tr>
+<td><code>EMPTY</code></td>
+<td>비어 있어야 함</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>NOT_EMPTY</code></td>
+<td>필수 입력</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>LEN_GT</code></td>
+<td>길이 초과 금지 → <strong>길이 ≤ N</strong> 이어야 통과</td>
+<td><code>N</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>LEN_LT</code></td>
+<td>최소 길이 → <strong>길이 ≥ N</strong> 이어야 통과</td>
+<td><code>N</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>IN</code></td>
+<td>목록 중 하나</td>
+<td><code>A,B,C</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>NOT_IN</code></td>
+<td>목록에 없어야 함</td>
+<td><code>A,B,C</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>CUSTOM</code></td>
+<td>앱 내부 코드 검사</td>
+<td>검사명. <code>CHECK_STOCK</code></td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>규칙 의미 통일</strong>: 모든 규칙은 "<strong>이 조건을 만족해야 통과</strong>"로 해석한다.
+예) <code>Quantity LE 100</code> → 100 이하면 통과, 초과하면 <code>ErrorCode</code> 발생.</p>
+</blockquote>
+<h3 id="34-ruledatatype-static-entity">3.4 RuleDataType (Static Entity)</h3>
+<p><code>Text</code>, <code>Integer</code>, <code>Decimal</code>, <code>Date</code>, <code>DateTime</code>, <code>Boolean</code></p>
+<h3 id="35-validationrulehistory-entity-권장">3.5 ValidationRuleHistory (Entity, 권장)</h3>
+<table>
+<thead>
+<tr>
+<th>속성</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RuleId, Action(<code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>), BeforeJson, AfterJson, ChangedBy, ChangedOn</td>
+<td>규칙 변경 이력. 장애 시 원복용</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-structure-정의">4. Structure 정의</h2>
+<blockquote>
+<p>Service Action의 입출력에 쓰이므로 <strong>CommonValidation에서 Public으로 정의</strong>한다.</p>
+</blockquote>
+<div class="structs"><div class="st"><div class="sth"><span data-ic="json" data-s="22"></span> FieldValue</div><table><tr><td class="pn">Key</td><td class="pt">Text</td><td class="pd">필드명 (Rule.FieldName 과 일치)</td></tr><tr><td class="pn">Value</td><td class="pt">Text</td><td class="pd">값 (10.1 포맷 규칙 준수)</td></tr></table></div><div class="st"><div class="sth"><span data-ic="json" data-s="22"></span> ValidationError</div><table><tr><td class="pn">RuleId</td><td class="pt">Long Integer</td><td class="pd"></td></tr><tr><td class="pn">FieldName</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">ErrorCode</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">Message</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">Severity</td><td class="pt">Text</td><td class="pd">Error / Warning / Info</td></tr><tr><td class="pn">HttpStatus</td><td class="pt">Integer</td><td class="pd"></td></tr></table></div><div class="st"><div class="sth"><span data-ic="json" data-s="22"></span> ValidationResult</div><table><tr><td class="pn">IsValid</td><td class="pt">Boolean</td><td class="pd">Severity="Error" 가 없으면 True</td></tr><tr><td class="pn">Errors</td><td class="pt">ValidationError List</td><td class="pd"></td></tr></table></div><div class="st"><div class="sth"><span data-ic="json" data-s="22"></span> ErrorMessageResult</div><table><tr><td class="pn">Code</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">Message</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">Severity</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">HttpStatus</td><td class="pt">Integer</td><td class="pd"></td></tr><tr><td class="pn">IsFound</td><td class="pt">Boolean</td><td class="pd"></td></tr></table></div><div class="st"><div class="sth"><span data-ic="json" data-s="22"></span> ErrorCodeItem</div><table><tr><td class="pn">Code</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">Message</td><td class="pt">Text</td><td class="pd"></td></tr><tr><td class="pn">Severity</td><td class="pt">Text</td><td class="pd"></td></tr></table></div></div>
+
+<hr />
+<h2 id="5-공개-service-action">5. 공개 Service Action</h2>
+<h3 id="51-geterrormessage">5.1 <code>GetErrorMessage</code></h3>
+<div class="flowmount" data-id="GetErrorMessage"></div>
+
+<h3 id="52-validatebyrules--핵심">5.2 <code>ValidateByRules</code> ★ 핵심</h3>
+<div class="flowmount" data-id="ValidateByRules"></div>
+
+<h3 id="53-getcustomchecks">5.3 <code>GetCustomChecks</code></h3>
+<div class="flowmount" data-id="GetCustomChecks"></div>
+
+<h3 id="54-geterrorcodelist-클라이언트-캐시용-선택">5.4 <code>GetErrorCodeList</code> (클라이언트 캐시용, 선택)</h3>
+<div class="flowmount" data-id="GetErrorCodeList"></div>
+
+<ul>
+<li>로그인 후 1회 호출 → Client Variable(JSONSerialize) 또는 Local Storage Entity에 저장</li>
+<li>클라이언트 측 즉시 메시지 표시용. <strong>최종 검증은 반드시 서버(ValidateByRules)</strong></li>
+</ul>
+<hr />
+<h2 id="6-내부-server-action-헬퍼">6. 내부 Server Action (헬퍼)</h2>
+<blockquote>
+<p>모두 <code>CommonValidation</code> 내부(Public = No)</p>
+</blockquote>
+<h3 id="61-findfieldvalue">6.1 <code>FindFieldValue</code></h3>
+<div class="flowmount" data-id="FindFieldValue"></div>
+
+<h3 id="62-comparevalues">6.2 <code>CompareValues</code></h3>
+<div class="flowmount" data-id="CompareValues"></div>
+
+<blockquote>
+<p>타입별로 Local Variable(L/R)이 달라지므로 실제 구현은 Switch 분기마다 Assign 노드에서 Result까지 계산한다.</p>
+</blockquote>
+<h3 id="63-evaluaterule">6.3 <code>EvaluateRule</code></h3>
+<div class="flowmount" data-id="EvaluateRule"></div>
+
+<blockquote>
+<p><strong>IN 목록 값에 공백이 포함되면 안 된다</strong> (공백 제거 후 비교). 공백이 필요한 값은 코드값으로 관리할 것.</p>
+</blockquote>
+<h3 id="64-buildmessageparams">6.4 <code>BuildMessageParams</code></h3>
+<table>
+<thead>
+<tr>
+<th>In</th>
+<th>Rule, Fields, IsConfigError (Boolean)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Out</td>
+<td>Params (Text List)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MessageParams 토큰 규칙</strong></p>
+<table>
+<thead>
+<tr>
+<th>토큰</th>
+<th>치환 결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@Label</code></td>
+<td>Rule.FieldLabel (없으면 FieldName)</td>
+</tr>
+<tr>
+<td><code>@Value</code></td>
+<td>해당 필드의 입력값</td>
+</tr>
+<tr>
+<td><code>@CompareValue</code></td>
+<td>Rule.CompareValue</td>
+</tr>
+<tr>
+<td><code>필드명</code> (예: <code>MaxQty</code>)</td>
+<td>Fields 에서 그 Key 의 값</td>
+</tr>
+</tbody>
+</table>
+<div class="flowmount" data-id="BuildMessageParams"></div>
+
+<h3 id="65-splittext">6.5 <code>SplitText</code></h3>
+<div class="flowmount" data-id="SplitText"></div>
+
+<hr />
+<h2 id="7-소비-앱-공통-래퍼">7. 소비 앱 공통 래퍼</h2>
+<blockquote>
+<p>각 업무 App(Order, Member …)에 <strong>한 번만</strong> 만든다. 화면마다 만들 필요 없음.</p>
+</blockquote>
+<h3 id="71-user-exception">7.1 User Exception</h3>
+<ul>
+<li><code>BusinessException</code> — ExceptionMessage 에 <code>JSONSerialize(ValidationError List)</code> 저장</li>
+</ul>
+<blockquote>
+<p>Service Action 안에서 발생시킨 User Exception은 호출 앱에서 같은 타입으로 잡을 수 없으므로,
+<strong>엔진은 결과를 반환만 하고 예외는 각 앱에서 발생</strong>시킨다.</p>
+</blockquote>
+<h3 id="72-runvalidation-server-action">7.2 <code>RunValidation</code> (Server Action)</h3>
+<div class="flowmount" data-id="RunValidation"></div>
+
+<blockquote>
+<p>새로운 <strong>종류의</strong> CUSTOM 검사를 추가할 때만 배포 필요.
+기존 검사의 켜기/끄기, 적용 Context, 에러코드, 순서 변경은 관리 화면에서 처리.</p>
+</blockquote>
+<h3 id="73-validateorraise-server-action--화면이-아닌-곳timer-rest-배치용">7.3 <code>ValidateOrRaise</code> (Server Action) — 화면이 아닌 곳(Timer, REST, 배치)용</h3>
+<div class="flowmount" data-id="ValidateOrRaise"></div>
+
+<p><strong>Exposed REST API에서 사용 시</strong></p>
+<div class="flowmount" data-id="RestPostOrder"></div>
+
+<h3 id="74-getfielderror-client-action-function--yes">7.4 <code>GetFieldError</code> (Client Action, Function = Yes)</h3>
+<div class="flowmount" data-id="GetFieldError"></div>
+
+<h3 id="75-joinerrormessages-client-action-function--yes">7.5 <code>JoinErrorMessages</code> (Client Action, Function = Yes)</h3>
+<div class="flowmount" data-id="JoinErrorMessages"></div>
+
+<hr />
+<h2 id="8-화면-적용-예시-주문-저장">8. 화면 적용 예시 (주문 저장)</h2>
+<h3 id="81-등록할-규칙-관리-화면에서-입력">8.1 등록할 규칙 (관리 화면에서 입력)</h3>
+<p><strong>ErrorCode</strong></p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Locale</th>
+<th>Message</th>
+<th>Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ORD-0001</code></td>
+<td>ko-KR</td>
+<td>{0}은(는) 필수 입력입니다.</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>ORD-1001</code></td>
+<td>ko-KR</td>
+<td>{0}은(는) {1}개 이하로 입력하세요. (입력: {2})</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>ORD-1002</code></td>
+<td>ko-KR</td>
+<td>재고가 부족합니다.</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>ORD-1003</code></td>
+<td>ko-KR</td>
+<td>종료일은 시작일 이후여야 합니다.</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>ORD-1004</code></td>
+<td>ko-KR</td>
+<td>허용되지 않은 결제수단입니다. ({0})</td>
+<td><span class="b err">Error</span></td>
+</tr>
+<tr>
+<td><code>ORD-2001</code></td>
+<td>ko-KR</td>
+<td>주문금액이 {0}원을 초과합니다. 승인이 필요할 수 있습니다.</td>
+<td><span class="b warn">Warning</span></td>
+</tr>
+</tbody>
+</table>
+<p><strong>ValidationRule (Context = <code>ORDER.SAVE</code>)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Seq</th>
+<th>FieldName</th>
+<th>FieldLabel</th>
+<th>DataType</th>
+<th>Operator</th>
+<th>CompareValue</th>
+<th>CompareField</th>
+<th>ErrorCode</th>
+<th>MessageParams</th>
+<th>StopOnFail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td>CustomerId</td>
+<td>고객</td>
+<td>Text</td>
+<td>NOT_EMPTY</td>
+<td></td>
+<td></td>
+<td>ORD-0001</td>
+<td>@Label</td>
+<td>True</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Quantity</td>
+<td>주문수량</td>
+<td>Integer</td>
+<td>NOT_EMPTY</td>
+<td></td>
+<td></td>
+<td>ORD-0001</td>
+<td>@Label</td>
+<td>True</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Quantity</td>
+<td>주문수량</td>
+<td>Integer</td>
+<td>LE</td>
+<td>100</td>
+<td></td>
+<td>ORD-1001</td>
+<td>@Label,@CompareValue,@Value</td>
+<td>False</td>
+</tr>
+<tr>
+<td>40</td>
+<td>EndDate</td>
+<td>종료일</td>
+<td>Date</td>
+<td>GE</td>
+<td></td>
+<td>StartDate</td>
+<td>ORD-1003</td>
+<td></td>
+<td>False</td>
+</tr>
+<tr>
+<td>50</td>
+<td>PayMethod</td>
+<td>결제수단</td>
+<td>Text</td>
+<td>IN</td>
+<td>CARD,BANK,POINT</td>
+<td></td>
+<td>ORD-1004</td>
+<td>@Value</td>
+<td>False</td>
+</tr>
+<tr>
+<td>60</td>
+<td>Quantity</td>
+<td>재고</td>
+<td>Text</td>
+<td>CUSTOM</td>
+<td>CHECK_STOCK</td>
+<td></td>
+<td>ORD-1002</td>
+<td></td>
+<td>False</td>
+</tr>
+<tr>
+<td>70</td>
+<td>TotalAmount</td>
+<td>주문금액</td>
+<td>Decimal</td>
+<td>LE</td>
+<td>10000000</td>
+<td></td>
+<td>ORD-2001</td>
+<td>@CompareValue</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>70번은 Warning → 메시지는 표시되지만 <code>IsValid = True</code> 이므로 저장 가능.</p>
+</blockquote>
+<h3 id="82-server-action-saveorder-order-app">8.2 Server Action <code>SaveOrder</code> (Order App)</h3>
+<div class="flowmount" data-id="SaveOrder"></div>
+
+<blockquote>
+<p>값이 0/빈 날짜인 경우 <code>NOT_EMPTY</code> 가 통과해 버리지 않도록, 미입력 값은 <code>""</code> 로 넣는다.
+예: <code>If(Order.CustomerId = NullIdentifier(), "", LongIntegerToText(Order.CustomerId))</code>
+날짜: <code>If(Order.StartDate = NullDate(), "", DateToText(Order.StartDate))</code></p>
+</blockquote>
+<h3 id="83-client-action-saveonclick-화면">8.3 Client Action <code>SaveOnClick</code> (화면)</h3>
+<div class="flowmount" data-id="SaveOnClick"></div>
+
+<p><strong>필드별 메시지 표시</strong> — 각 Input 아래 Expression:</p>
+<pre><code class="language-text">Expression  : GetFieldError(Errors, &quot;Quantity&quot;)
+Visible     : GetFieldError(Errors, &quot;Quantity&quot;) &lt;&gt; &quot;&quot;
+Style Class : &quot;validation-message&quot;
+</code></pre>
+<hr />
+<h2 id="9-관리-화면">9. 관리 화면</h2>
+<table>
+<thead>
+<tr>
+<th>화면</th>
+<th>기능</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ErrorCodeList / ErrorCodeDetail</td>
+<td>코드 검색(Code, Locale), 등록/수정/비활성화, Excel import/export</td>
+</tr>
+<tr>
+<td>RuleList</td>
+<td>Context 필터, Sequence 순 정렬, 활성/비활성 토글</td>
+</tr>
+<tr>
+<td>RuleDetail</td>
+<td>Operator 선택 시 CompareValue 입력 형식 안내 문구 표시. ErrorCode는 Dropdown(ErrorCode Entity)</td>
+</tr>
+<tr>
+<td>RuleTest ★</td>
+<td>Context 선택 + <code>Key=Value</code> 여러 줄 입력 → ValidateByRules 실행 → 결과 표 표시</td>
+</tr>
+<tr>
+<td>RuleHistory</td>
+<td>변경 이력 조회 / 이전 값 복원</td>
+</tr>
+</tbody>
+</table>
+<p><strong>RuleDetail 저장 시 사전 검증 (Server Action)</strong></p>
+<ul>
+<li><code>Operator ∈ {GT,GE,LT,LE,BETWEEN}</code> 인데 DataType 이 <code>Text</code>/<code>Boolean</code> → 저장 불가</li>
+<li><code>LEN_GT/LEN_LT</code> 인데 CompareValue 가 정수 아님 → 저장 불가</li>
+<li><code>BETWEEN</code> 인데 콤마 없음 → 저장 불가</li>
+<li><code>ErrorCode</code> 가 ErrorCode Entity 에 없음 → 저장 불가</li>
+<li>저장 시 ValidationRuleHistory 에 Before/After JSON 기록</li>
+</ul>
+<p><strong>RuleTest 입력 파싱</strong></p>
+<pre><code class="language-text">입력 예)
+CustomerId=1
+Quantity=150
+StartDate=2026-11-01
+EndDate=2026-10-01
+#CHECK_STOCK=true      ← CUSTOM 결과를 직접 지정해 테스트
+
+처리: SplitText(입력, NewLine()) → 각 줄 Index(&quot;=&quot;) 로 Key/Value 분리 → Fields
+</code></pre>
+<hr />
+<h2 id="10-운영-규칙--주의사항">10. 운영 규칙 &amp; 주의사항</h2>
+<h3 id="101-fields-값-포맷-반드시-통일">10.1 Fields 값 포맷 (반드시 통일)</h3>
+<table>
+<thead>
+<tr>
+<th>DataType</th>
+<th>변환 함수</th>
+<th>포맷</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Integer</td>
+<td><code>IntegerToText</code></td>
+<td><code>150</code></td>
+</tr>
+<tr>
+<td>Decimal</td>
+<td><code>DecimalToText</code></td>
+<td><code>1234.5</code> (소수점 <code>.</code>)</td>
+</tr>
+<tr>
+<td>Date</td>
+<td><code>DateToText</code></td>
+<td><code>2026-11-24</code></td>
+</tr>
+<tr>
+<td>DateTime</td>
+<td><code>DateTimeToText</code></td>
+<td><code>2026-11-24 13:05:00</code></td>
+</tr>
+<tr>
+<td>Boolean</td>
+<td><code>BooleanToText</code></td>
+<td><code>True</code> / <code>False</code></td>
+</tr>
+<tr>
+<td>미입력</td>
+<td>-</td>
+<td><code>""</code> (0, NullDate 넣지 말 것)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>관리 화면 CompareValue 도 같은 포맷으로 입력. 화면 표시용 포맷(<code>FormatDecimal</code> 등) 사용 금지.</p>
+</blockquote>
+<h3 id="102-명명-규칙">10.2 명명 규칙</h3>
+<ul>
+<li>Context: <code>앱.동작</code> → <code>ORDER.SAVE</code>, <code>MEMBER.JOIN</code>, <code>ORDER.CANCEL</code></li>
+<li>ErrorCode: <code>도메인-4자리</code> → <code>ORD-1001</code>, <code>MBR-0001</code>, 시스템은 <code>SYS-</code></li>
+<li>CUSTOM 검사명: <code>CHECK_대문자</code> → <code>CHECK_STOCK</code></li>
+</ul>
+<h3 id="103-배포-vs-관리화면-반영-범위">10.3 배포 vs 관리화면 반영 범위</h3>
+<table>
+<thead>
+<tr>
+<th>변경 내용</th>
+<th>배포 필요</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>에러 메시지 문구 수정</td>
+<td><span class="b ok">✕ 불필요</span></td>
+</tr>
+<tr>
+<td>기존 Context에 규칙 추가/수정/비활성화</td>
+<td><span class="b ok">✕ 불필요</span></td>
+</tr>
+<tr>
+<td>기존 CUSTOM 검사를 다른 Context에 적용</td>
+<td><span class="b ok">✕ 불필요</span></td>
+</tr>
+<tr>
+<td>Fields 에 없던 새 필드로 규칙 추가</td>
+<td><span class="b err">○ 필요</span> (Fields 구성 수정)</td>
+</tr>
+<tr>
+<td>새 Context(새 저장 지점) 추가</td>
+<td><span class="b err">○ 필요</span> (RunValidation 호출 추가)</td>
+</tr>
+<tr>
+<td>새 종류의 CUSTOM 검사</td>
+<td><span class="b err">○ 필요</span> (Check_ Action + Switch 분기)</td>
+</tr>
+<tr>
+<td>새 Operator</td>
+<td><span class="b err">○ 필요</span> (CommonValidation 엔진)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="104-환경stage-데이터">10.4 환경(Stage) 데이터</h3>
+<ul>
+<li>ODC 배포 시 <strong>Entity 데이터는 이동하지 않는다</strong> (Dev/QA/Prod DB 분리).</li>
+<li>ErrorCode, ValidationRule 은 <strong>Excel export → 대상 환경 import</strong> 로 동기화.</li>
+<li>import 시 <code>Code+Locale</code>, <code>Context+FieldName+Operator+Sequence</code> 기준 Upsert 권장.</li>
+</ul>
+<h3 id="105-기타">10.5 기타</h3>
+<ul>
+<li>Advanced SQL 로 조건식 문자열을 실행(Expand Inline)하지 말 것 — SQL Injection 위험.</li>
+<li>규칙 수가 많은 Context 는 Sequence 앞쪽에 필수값(<code>NOT_EMPTY</code> + StopOnFail) 배치 → 불필요한 평가 감소.</li>
+<li>운영 중 규칙 오등록 대비: RuleTest 로 확인 후 활성화, History 로 즉시 원복.</li>
+<li>SYS-0002 / SYS-0003 이 발생하면 <strong>규칙 설정 문제</strong>이므로 로그(LogMessage) 남기고 관리자 알림 권장.</li>
+</ul>
+<hr />
+<h2 id="11-구현-체크리스트">11. 구현 체크리스트</h2>
+<p><strong>CommonValidation App</strong></p>
+<ul>
+<li>☐ Entity: ErrorCode, ValidationRule, ValidationRuleHistory (+ Index)</li>
+<li>☐ Static Entity: RuleOperator, RuleDataType</li>
+<li>☐ Structure: FieldValue, ValidationError, ValidationResult, ErrorMessageResult, ErrorCodeItem (Public)</li>
+<li>☐ 내부 Action: FindFieldValue, CompareValues, EvaluateRule, BuildMessageParams, SplitText</li>
+<li>☐ Service Action: GetErrorMessage, ValidateByRules, GetCustomChecks, GetErrorCodeList</li>
+<li>☐ 시스템 코드 SYS-0001~0003 등록</li>
+<li>☐ 관리 화면 + ValidationAdmin Role + RuleTest 화면</li>
+<li>☐ Excel import/export</li>
+</ul>
+<p><strong>각 업무 App</strong></p>
+<ul>
+<li>☐ Dependency 추가 (CommonValidation Service Actions, Structures)</li>
+<li>☐ User Exception: BusinessException</li>
+<li>☐ Server Action: RunValidation, ValidateOrRaise, (필요 시) Check_xxx</li>
+<li>☐ Client Function: GetFieldError, JoinErrorMessages</li>
+<li>☐ 저장 Server Action 마다: Fields 구성 → RunValidation → IsValid 분기</li>
+<li>☐ 화면: Errors Local Variable + 필드별 메시지 Expression</li>
+</ul>
+<p><strong>테스트</strong></p>
+<ul>
+<li>☐ 각 Operator 별 통과/위반 케이스</li>
+<li>☐ 빈 값 + 비교 규칙 → 통과 / NOT_EMPTY → 위반</li>
+<li>☐ 잘못된 규칙(타입 불일치) → SYS-0002</li>
+<li>☐ CUSTOM 미구현 → SYS-0003</li>
+<li>☐ Warning 만 있을 때 저장 성공 + 안내 표시</li>
+<li>☐ Locale 누락 시 ko-KR fallback</li>
+</ul></main></div>
+<button id="top" title="맨 위로">↑</button><script>// ===== Flow 데이터 =====
+// 노드 타입: start end aggregate assign server service client system if switch foreach raise json message entity goto destination
+const N = (t, n, p, extra) => Object.assign({ t, n, p: p || {} }, extra || {});
+const AGG = (n, p, x) => N('aggregate', n, p, x);
+const ASG = (n, p, x) => N('assign', n, p, x);
+const SRV = (n, p, x) => N('server', n, p, x);
+const SVC = (n, p, x) => N('service', n, p, x);
+const SYS = (n, p, x) => N('system', n, p, x);
+const IF = (n, cond, yes, no, x) => N('if', n, { Condition: cond }, Object.assign({ yes, no }, x || {}));
+const SW = (n, cases, other, x) => N('switch', n, {}, Object.assign({ cases, other }, x || {}));
+const FE = (n, list, body, x) => N('foreach', n, { 'Record List': list }, Object.assign({ body }, x || {}));
+const END = (note) => N('end', 'End', {}, note ? { note } : {});
+const GO = (n, note) => N('goto', n, {}, note ? { note } : {});
+const C = (c, f) => ({ c, f });
+
+const FLOWS = {};
+
+// ---------- 5.1 GetErrorMessage ----------
+FLOWS.GetErrorMessage = [{
+  name: 'GetErrorMessage', kind: 'service', app: 'CommonValidation',
+  desc: '다른 앱에서 호출하는 공개 Service Action. 실제 로직은 같은 앱의 Server Action GetErrorMessageCore에 두고 그대로 호출만 한다 (ValidateByRules 안에서도 Core를 재사용하기 위함).',
+  inputs: [['Code', 'Text', '필수'], ['Params', 'Text List', ''], ['Locale', 'Text', '기본값 "ko-KR"']],
+  outputs: [['Result', 'ErrorMessageResult', '']],
+  flow: [
+    SRV('GetErrorMessageCore', { Code: 'Code', Params: 'Params', Locale: 'Locale' }),
+    ASG('SetResult', { 'Result': 'GetErrorMessageCore.Result' }),
+    END()
+  ]
+}, {
+  name: 'GetErrorMessageCore', kind: 'server', app: 'CommonValidation',
+  desc: '에러코드 + 파라미터 → 최종 메시지. Locale이 없으면 ko-KR로 대체, 코드가 없으면 SYS-0001.',
+  inputs: [['Code', 'Text', '필수'], ['Params', 'Text List', ''], ['Locale', 'Text', '기본값 "ko-KR"']],
+  outputs: [['Result', 'ErrorMessageResult', '']],
+  locals: [['Row', 'ErrorCode Record', '조회된 행'], ['Msg', 'Text', '치환 중 메시지']],
+  flow: [
+    AGG('GetCode', { Source: 'ErrorCode', Filter: 'ErrorCode.Code = Code\nand ErrorCode.Locale = Locale\nand ErrorCode.IsActive = True', 'Max. Records': '1' }),
+    ASG('SetRow', { 'Row': 'GetCode.List.Current.ErrorCode' }),
+    IF('Locale Fallback?', 'GetCode.List.Empty and Locale <> "ko-KR"',
+      [AGG('GetCodeDefault', { Source: 'ErrorCode', Filter: 'ErrorCode.Code = Code\nand ErrorCode.Locale = "ko-KR"\nand ErrorCode.IsActive = True', 'Max. Records': '1' }),
+       ASG('SetRowDefault', { 'Row': 'GetCodeDefault.List.Current.ErrorCode' })],
+      []),
+    IF('코드 없음?', 'Row.Id = NullIdentifier()',
+      [ASG('SetNotFound', {
+        'Result.Code': '"SYS-0001"',
+        'Result.Message': '"등록되지 않은 오류가 발생했습니다. (" + Code + ")"',
+        'Result.Severity': '"Error"', 'Result.HttpStatus': '500', 'Result.IsFound': 'False' }),
+       END()],
+      []),
+    ASG('SetMsg', { 'Msg': 'Row.Message' }),
+    FE('For Each Params', 'Params', [
+      ASG('ReplaceParam', { 'Msg': 'Replace(Msg, "{" + Params.CurrentRowNumber + "}", Params.Current)' }, { note: 'CurrentRowNumber는 0부터 → {0}, {1} … 과 일치' })
+    ]),
+    ASG('SetResult', {
+      'Result.Code': 'Code', 'Result.Message': 'Msg', 'Result.Severity': 'Row.Severity',
+      'Result.HttpStatus': 'If(Row.HttpStatus = 0, 400, Row.HttpStatus)', 'Result.IsFound': 'True' }),
+    END()
+  ]
+}];
+
+// ---------- 5.2 ValidateByRules ----------
+FLOWS.ValidateByRules = [{
+  name: 'ValidateByRules', kind: 'service', app: 'CommonValidation',
+  desc: '★ 핵심 검증 엔진. Context에 등록된 활성 규칙을 순서대로 평가하고 위반 목록을 반환한다. 예외는 발생시키지 않는다.',
+  inputs: [['Context', 'Text', '필수. 예) "ORDER.SAVE"'], ['Fields', 'FieldValue List', '검사 대상 Key/Value'], ['Locale', 'Text', '기본값 "ko-KR"'], ['StopOnFirstError', 'Boolean', '기본값 False']],
+  outputs: [['Result', 'ValidationResult', '']],
+  locals: [['ErrCode', 'Text', '이번 위반의 에러코드']],
+  flow: [
+    AGG('GetRules', { Source: 'ValidationRule', Filter: 'ValidationRule.Context = Context\nand ValidationRule.IsActive = True', Sort: 'Sequence ASC, Id ASC' }),
+    IF('규칙 없음?', 'GetRules.List.Empty',
+      [ASG('SetValid', { 'Result.IsValid': 'True' }), END()], []),
+    FE('For Each Rule', 'GetRules.List', [
+      SRV('EvaluateRule', { Rule: 'GetRules.List.Current.ValidationRule', Fields: 'Fields' }),
+      IF('통과?', 'EvaluateRule.Passed',
+        [GO('다음 Cycle', 'For Each 아이콘으로 다시 연결')], []),
+      ASG('SetErrCode', { 'ErrCode': 'If(EvaluateRule.IsConfigError,\n   EvaluateRule.ConfigErrorCode,\n   GetRules.List.Current.ValidationRule.ErrorCode)' }),
+      SRV('BuildMessageParams', { Rule: 'GetRules.List.Current.ValidationRule', Fields: 'Fields', IsConfigError: 'EvaluateRule.IsConfigError', ConfigErrorCode: 'EvaluateRule.ConfigErrorCode' }),
+      SRV('GetErrorMessageCore', { Code: 'ErrCode', Params: 'BuildMessageParams.Params', Locale: 'Locale' }),
+      SYS('ListAppend', { List: 'Result.Errors', Element: 'ValidationError{\n RuleId = GetRules.List.Current.ValidationRule.Id,\n FieldName = GetRules.List.Current.ValidationRule.FieldName,\n ErrorCode = GetErrorMessageCore.Result.Code,\n Message = GetErrorMessageCore.Result.Message,\n Severity = GetErrorMessageCore.Result.Severity,\n HttpStatus = GetErrorMessageCore.Result.HttpStatus }' }),
+      IF('중단?', 'GetRules.List.Current.ValidationRule.StopOnFail\nor StopOnFirstError',
+        [GO('루프 종료', 'For Each 바깥의 ListAny 노드로 연결')],
+        [GO('다음 Cycle', 'For Each 아이콘으로 다시 연결')])
+    ]),
+    SYS('ListAny', { List: 'Result.Errors', Condition: 'Result.Errors.Current.Severity = "Error"' }),
+    ASG('SetIsValid', { 'Result.IsValid': 'not ListAny.Result' }, { note: 'Warning/Info만 있으면 IsValid = True → 저장 허용' }),
+    END()
+  ]
+}];
+
+// ---------- 5.3 GetCustomChecks ----------
+FLOWS.GetCustomChecks = [{
+  name: 'GetCustomChecks', kind: 'service', app: 'CommonValidation',
+  desc: 'Context에서 사용 중인 CUSTOM 검사명 목록 (중복 제거).',
+  inputs: [['Context', 'Text', '필수']], outputs: [['CheckNames', 'Text List', '']],
+  flow: [
+    AGG('GetCustomRules', { Source: 'ValidationRule', Filter: 'ValidationRule.Context = Context\nand ValidationRule.IsActive = True\nand ValidationRule.Operator = Entities.RuleOperator.CUSTOM', 'Group By': 'CompareValue' }),
+    FE('For Each CustomRule', 'GetCustomRules.List', [
+      SYS('ListAppend', { List: 'CheckNames', Element: 'GetCustomRules.List.Current.CompareValue' })
+    ]),
+    END()
+  ]
+}];
+
+// ---------- 5.4 GetErrorCodeList ----------
+FLOWS.GetErrorCodeList = [{
+  name: 'GetErrorCodeList', kind: 'service', app: 'CommonValidation',
+  desc: '로그인 후 1회 호출해 클라이언트에 캐시 (선택).',
+  inputs: [['Locale', 'Text', '']], outputs: [['Items', 'ErrorCodeItem List', '']],
+  flow: [
+    AGG('GetCodes', { Source: 'ErrorCode', Filter: 'ErrorCode.Locale = Locale\nand ErrorCode.IsActive = True', Sort: 'Code ASC' }),
+    FE('For Each Code', 'GetCodes.List', [
+      SYS('ListAppend', { List: 'Items', Element: 'ErrorCodeItem{\n Code = GetCodes.List.Current.ErrorCode.Code,\n Message = GetCodes.List.Current.ErrorCode.Message,\n Severity = GetCodes.List.Current.ErrorCode.Severity }' })
+    ]),
+    END()
+  ]
+}];
+
+// ---------- 6.1 FindFieldValue ----------
+FLOWS.FindFieldValue = [{
+  name: 'FindFieldValue', kind: 'server', app: 'CommonValidation (Public = No)',
+  desc: 'Fields에서 Key로 값을 찾는다 (대소문자 무시).',
+  inputs: [['Fields', 'FieldValue List', ''], ['Key', 'Text', '']],
+  outputs: [['Found', 'Boolean', ''], ['Value', 'Text', 'Trim 된 값']],
+  flow: [
+    SYS('ListFilter', { List: 'Fields', Condition: 'ToLower(Fields.Current.Key) = ToLower(Key)' }),
+    ASG('SetOutput', { 'Found': 'not ListFilter.FilteredList.Empty', 'Value': 'If(Found, Trim(ListFilter.FilteredList.Current.Value), "")' }, { note: 'Assign은 위에서부터 순서대로 실행되므로 Found를 바로 아래에서 사용 가능' }),
+    END()
+  ]
+}];
+
+// ---------- 6.2 CompareValues ----------
+const cmpAssign = (fnV, fnC) => ASG('Set' , {
+  'IsValid': fnV + '(Left) and ' + fnV + '(Right)',
+  'Result': 'If(not IsValid, 0,\n If(' + fnC + '(Left) < ' + fnC + '(Right), -1,\n If(' + fnC + '(Left) > ' + fnC + '(Right), 1, 0)))'
+});
+FLOWS.CompareValues = [{
+  name: 'CompareValues', kind: 'server', app: 'CommonValidation (Public = No)',
+  desc: '두 텍스트 값을 DataType에 맞게 변환해 비교. -1(작음) / 0(같음) / 1(큼).',
+  inputs: [['Left', 'Text', ''], ['Right', 'Text', ''], ['DataType', 'RuleDataType Identifier', '']],
+  outputs: [['Result', 'Integer', '-1 / 0 / 1'], ['IsValid', 'Boolean', '변환 성공 여부']],
+  flow: [
+    SW('DataType 분기', [
+      C('DataType = Entities.RuleDataType.Integer', [Object.assign(cmpAssign('TextToIntegerValidate', 'TextToInteger'), { n: 'CompareInteger' })]),
+      C('DataType = Entities.RuleDataType.Decimal', [Object.assign(cmpAssign('TextToDecimalValidate', 'TextToDecimal'), { n: 'CompareDecimal' })]),
+      C('DataType = Entities.RuleDataType.Date', [Object.assign(cmpAssign('TextToDateValidate', 'TextToDate'), { n: 'CompareDate' })]),
+      C('DataType = Entities.RuleDataType.DateTime', [Object.assign(cmpAssign('TextToDateTimeValidate', 'TextToDateTime'), { n: 'CompareDateTime' })])
+    ], [ASG('CompareText', { 'IsValid': 'True', 'Result': 'If(ToLower(Trim(Left)) = ToLower(Trim(Right)), 0, 1)' }, { note: 'Text / Boolean 은 같음·다름만 의미 있음' })]),
+    END()
+  ]
+}];
+
+// ---------- 6.3 EvaluateRule ----------
+const V = 'FindValue.Value';
+FLOWS.EvaluateRule = [{
+  name: 'EvaluateRule', kind: 'server', app: 'CommonValidation (Public = No)',
+  desc: '규칙 1건 평가. 모든 규칙은 "조건을 만족하면 통과(Passed = True)".',
+  inputs: [['Rule', 'ValidationRule Record', ''], ['Fields', 'FieldValue List', '']],
+  outputs: [['Passed', 'Boolean', ''], ['IsConfigError', 'Boolean', '규칙 설정 오류'], ['ConfigErrorCode', 'Text', 'SYS-0002 / SYS-0003']],
+  locals: [['Right', 'Text', '비교 대상 값'], ['ListText', 'Text', 'IN 비교용'], ['Pos', 'Integer', 'BETWEEN 콤마 위치']],
+  flow: [
+    SRV('FindValue', { _action: 'FindFieldValue', Fields: 'Fields', Key: 'Rule.FieldName' }),
+    SW('Operator 분기', [
+      C('Rule.Operator = Entities.RuleOperator.EMPTY', [ASG('EvalEmpty', { 'Passed': V + ' = ""' })]),
+      C('Rule.Operator = Entities.RuleOperator.NOT_EMPTY', [ASG('EvalNotEmpty', { 'Passed': 'FindValue.Found and ' + V + ' <> ""' })]),
+      C('Rule.Operator = Entities.RuleOperator.CUSTOM', [
+        SRV('FindCustom', { _action: 'FindFieldValue', Fields: 'Fields', Key: '"#" + Rule.CompareValue' }),
+        IF('결과 있음?', 'FindCustom.Found',
+          [ASG('EvalCustom', { 'Passed': 'ToLower(FindCustom.Value) = "true"' })],
+          [ASG('CustomMissing', { 'Passed': 'False', 'IsConfigError': 'True', 'ConfigErrorCode': '"SYS-0003"' })])
+      ])
+    ], [
+      IF('값 비어 있음?', V + ' = ""',
+        [ASG('SkipEmpty', { 'Passed': 'True' }, { note: '빈 값은 통과. 필수 여부는 NOT_EMPTY 규칙 담당' }), END()], []),
+      IF('필드끼리 비교?', 'Rule.CompareField <> ""',
+        [SRV('FindCompare', { _action: 'FindFieldValue', Fields: 'Fields', Key: 'Rule.CompareField' }),
+         ASG('SetRightField', { 'Right': 'FindCompare.Value' })],
+        [ASG('SetRightValue', { 'Right': 'Trim(Rule.CompareValue)' })]),
+      SW('비교 연산 분기', [
+        C('Rule.Operator = Entities.RuleOperator.LEN_GT\nor Rule.Operator = Entities.RuleOperator.LEN_LT', [
+          ASG('EvalLength', { 'IsConfigError': 'not TextToIntegerValidate(Right)', 'Passed': 'If(Rule.Operator = Entities.RuleOperator.LEN_GT,\n Length(' + V + ') <= TextToInteger(Right),\n Length(' + V + ') >= TextToInteger(Right))' })]),
+        C('Rule.Operator = Entities.RuleOperator.IN\nor Rule.Operator = Entities.RuleOperator.NOT_IN', [
+          ASG('EvalIn', { 'ListText': '"," + ToLower(Replace(Right, " ", "")) + ","', 'Passed': 'If(Rule.Operator = Entities.RuleOperator.IN,\n Index(ListText, "," + ToLower(' + V + ') + ",") <> -1,\n Index(ListText, "," + ToLower(' + V + ') + ",") = -1)' })]),
+        C('Rule.Operator = Entities.RuleOperator.BETWEEN', [
+          ASG('SetPos', { 'Pos': 'Index(Right, ",")' }),
+          IF('콤마 없음?', 'Pos = -1',
+            [ASG('BetweenError', { 'IsConfigError': 'True' })],
+            [SRV('CompareMin', { _action: 'CompareValues', Left: V, Right: 'Trim(Substr(Right, 0, Pos))', DataType: 'Rule.DataType' }),
+             SRV('CompareMax', { _action: 'CompareValues', Left: V, Right: 'Trim(Substr(Right, Pos + 1, Length(Right) - Pos - 1))', DataType: 'Rule.DataType' }),
+             ASG('EvalBetween', { 'IsConfigError': 'not (CompareMin.IsValid and CompareMax.IsValid)', 'Passed': 'CompareMin.Result >= 0 and CompareMax.Result <= 0' })])
+        ])
+      ], [
+        SRV('CompareValues', { Left: V, Right: 'Right', DataType: 'Rule.DataType' }),
+        ASG('EvalCompare', { 'IsConfigError': 'not CompareValues.IsValid', 'Passed':
+          '(Rule.Operator = Entities.RuleOperator.EQ and CompareValues.Result = 0)\nor (Rule.Operator = Entities.RuleOperator.NE and CompareValues.Result <> 0)\nor (Rule.Operator = Entities.RuleOperator.GT and CompareValues.Result = 1)\nor (Rule.Operator = Entities.RuleOperator.GE and CompareValues.Result >= 0)\nor (Rule.Operator = Entities.RuleOperator.LT and CompareValues.Result = -1)\nor (Rule.Operator = Entities.RuleOperator.LE and CompareValues.Result <= 0)' }, { note: 'Otherwise = EQ / NE / GT / GE / LT / LE' })
+      ]),
+      IF('설정 오류?', 'IsConfigError',
+        [ASG('SetConfigError', { 'Passed': 'False', 'ConfigErrorCode': '"SYS-0002"' })], [])
+    ]),
+    END()
+  ]
+}];
+
+// ---------- 6.4 BuildMessageParams ----------
+FLOWS.BuildMessageParams = [{
+  name: 'BuildMessageParams', kind: 'server', app: 'CommonValidation (Public = No)',
+  desc: 'Rule.MessageParams 토큰(@Label, @Value, @CompareValue, 필드명)을 실제 값 목록으로 변환.',
+  inputs: [['Rule', 'ValidationRule Record', ''], ['Fields', 'FieldValue List', ''], ['IsConfigError', 'Boolean', ''], ['ConfigErrorCode', 'Text', '']],
+  outputs: [['Params', 'Text List', '']],
+  locals: [['Token', 'Text', '']],
+  flow: [
+    IF('설정 오류?', 'IsConfigError',
+      [IF('CUSTOM 누락?', 'ConfigErrorCode = "SYS-0003"',
+        [SYS('ListAppend', { List: 'Params', Element: 'Rule.CompareValue' })],
+        [SYS('ListAppend', { List: 'Params', Element: 'LongIntegerToText(Rule.Id)' }),
+         SYS('ListAppend', { List: 'Params', Element: 'Rule.FieldName' })]),
+       END()], []),
+    SRV('SplitText', { Source: 'Rule.MessageParams', Separator: '","' }),
+    FE('For Each Token', 'SplitText.Items', [
+      ASG('SetToken', { 'Token': 'Trim(SplitText.Items.Current)' }),
+      SW('토큰 분기', [
+        C('Token = "@Label"', [SYS('ListAppend', { List: 'Params', Element: 'If(Rule.FieldLabel <> "", Rule.FieldLabel, Rule.FieldName)' })]),
+        C('Token = "@Value"', [SRV('FindSelf', { _action: 'FindFieldValue', Fields: 'Fields', Key: 'Rule.FieldName' }), SYS('ListAppend', { List: 'Params', Element: 'FindSelf.Value' })]),
+        C('Token = "@CompareValue"', [SYS('ListAppend', { List: 'Params', Element: 'Rule.CompareValue' })])
+      ], [SRV('FindOther', { _action: 'FindFieldValue', Fields: 'Fields', Key: 'Token' }), SYS('ListAppend', { List: 'Params', Element: 'FindOther.Value' })])
+    ]),
+    END()
+  ]
+}];
+
+// ---------- 6.5 SplitText ----------
+FLOWS.SplitText = [{
+  name: 'SplitText', kind: 'server', app: 'CommonValidation (Public = No)',
+  desc: '구분자로 텍스트 분할. If + 되돌아가는 연결선으로 반복.',
+  inputs: [['Source', 'Text', ''], ['Separator', 'Text', '']],
+  outputs: [['Items', 'Text List', '']],
+  locals: [['Rest', 'Text', '남은 문자열'], ['Pos', 'Integer', '구분자 위치']],
+  flow: [
+    IF('빈 값?', 'Trim(Source) = ""', [END()], []),
+    ASG('InitRest', { 'Rest': 'Source' }),
+    ASG('FindPos', { 'Pos': 'Index(Rest, Separator)' }, { anchor: 'A' }),
+    IF('마지막 조각?', 'Pos = -1',
+      [SYS('ListAppend', { List: 'Items', Element: 'Trim(Rest)' }), END()],
+      [SYS('ListAppend', { List: 'Items', Element: 'Trim(Substr(Rest, 0, Pos))' }),
+       ASG('CutRest', { 'Rest': 'Substr(Rest, Pos + Length(Separator),\n Length(Rest) - Pos - Length(Separator))' }),
+       GO('Ⓐ FindPos 로 연결', '연결선을 위의 FindPos Assign으로 되돌림 (반복)')])
+  ]
+}];
+
+// ---------- 7.2 RunValidation ----------
+FLOWS.RunValidation = [{
+  name: 'RunValidation', kind: 'server', app: '업무 App (Order, Member …)',
+  desc: '각 업무 앱에 1개. CUSTOM 검사를 먼저 실행해 결과를 "#검사명"으로 Fields에 추가한 뒤 공통 엔진 호출.',
+  inputs: [['Context', 'Text', ''], ['Fields', 'FieldValue List', '']],
+  outputs: [['Result', 'ValidationResult', '']],
+  locals: [['AllFields', 'FieldValue List', 'Fields + CUSTOM 결과'], ['Ok', 'Boolean', 'CUSTOM 검사 결과']],
+  flow: [
+    ASG('CopyFields', { 'AllFields': 'Fields' }),
+    SVC('GetCustomChecks', { Context: 'Context' }),
+    FE('For Each Check', 'GetCustomChecks.CheckNames', [
+      SW('검사명 분기', [
+        C('GetCustomChecks.CheckNames.Current = "CHECK_STOCK"', [SRV('Check_Stock', { Fields: 'Fields' }), ASG('SetOk1', { 'Ok': 'Check_Stock.Ok' })]),
+        C('GetCustomChecks.CheckNames.Current = "CHECK_CREDIT_LIMIT"', [SRV('Check_CreditLimit', { Fields: 'Fields' }), ASG('SetOk2', { 'Ok': 'Check_CreditLimit.Ok' })])
+      ], [GO('다음 Cycle', '미구현 검사 → 엔진이 SYS-0003 반환')]),
+      SYS('ListAppend', { List: 'AllFields', Element: 'FieldValue{\n Key = "#" + GetCustomChecks.CheckNames.Current,\n Value = If(Ok, "true", "false") }' })
+    ], { note: '새 CUSTOM 검사 종류를 추가할 때만 Switch 분기 추가 + 배포' }),
+    SVC('ValidateByRules', { Context: 'Context', Fields: 'AllFields', Locale: 'GetCurrentLocale()', StopOnFirstError: 'False' }),
+    ASG('SetResult', { 'Result': 'ValidateByRules.Result' }),
+    END()
+  ]
+}, {
+  name: 'Check_Stock', kind: 'server', app: '업무 App (Order)',
+  desc: 'CUSTOM 검사 예시. Fields에서 값을 꺼내 DB 조회 후 Ok 반환. (FindFieldValue 헬퍼를 업무 앱에도 복사해 둔다)',
+  inputs: [['Fields', 'FieldValue List', '']], outputs: [['Ok', 'Boolean', '']],
+  flow: [
+    SRV('GetProductId', { _action: 'FindFieldValue', Fields: 'Fields', Key: '"ProductId"' }),
+    SRV('GetQty', { _action: 'FindFieldValue', Fields: 'Fields', Key: '"Quantity"' }),
+    AGG('GetStock', { Source: 'Stock', Filter: 'Stock.ProductId = TextToLongInteger(GetProductId.Value)', 'Max. Records': '1' }),
+    ASG('SetOk', { 'Ok': 'GetStock.List.Current.Stock.Qty >= TextToInteger(GetQty.Value)' }),
+    END()
+  ]
+}];
+
+// ---------- 7.3 ValidateOrRaise ----------
+FLOWS.ValidateOrRaise = [{
+  name: 'ValidateOrRaise', kind: 'server', app: '업무 App',
+  desc: '화면이 아닌 곳(Timer, REST, 배치)용. 실패하면 BusinessException.',
+  inputs: [['Context', 'Text', ''], ['Fields', 'FieldValue List', '']],
+  flow: [
+    SRV('RunValidation', { Context: 'Context', Fields: 'Fields' }),
+    IF('실패?', 'not RunValidation.Result.IsValid',
+      [N('json', 'JSONSerialize', { 'Data': 'RunValidation.Result.Errors' }),
+       N('raise', 'BusinessException', { 'Exception Message': 'JSONSerialize.JSON' })],
+      [END()])
+  ]
+}];
+
+// ---------- 7.3 REST ----------
+FLOWS.RestPostOrder = [{
+  name: 'PostOrder', kind: 'rest', app: '업무 App (Exposed REST API)',
+  desc: 'Exposed REST Method 예시. 상태코드는 OnResponse 콜백에서 Response 의 HttpStatus 로 설정.',
+  inputs: [['Request', 'OrderInput', 'Body']], outputs: [['Response', 'ApiResponse', 'Success, OrderId, Errors, HttpStatus']],
+  flow: [
+    SYS('ListAppend (×N)', { 'List': 'Fields', '…': 'SaveOrder 와 동일하게 Fields 구성' }),
+    SRV('ValidateOrRaise', { Context: '"ORDER.SAVE"', Fields: 'Fields' }),
+    SRV('SaveOrderCore', { Order: 'Request' }),
+    ASG('SetResponse', { 'Response.Success': 'True', 'Response.OrderId': 'SaveOrderCore.OrderId', 'Response.HttpStatus': '200' }),
+    END()
+  ],
+  handlers: [{
+    name: 'BusinessException', flow: [
+      N('json', 'JSONDeserialize', { 'JSON String': 'BusinessException.ExceptionMessage', 'Data Type': 'ValidationError List' }),
+      ASG('SetErrorResponse', { 'Response.Success': 'False', 'Response.Errors': 'JSONDeserialize.Data', 'Response.HttpStatus': 'JSONDeserialize.Data.Current.HttpStatus' }),
+      END()
+    ]
+  }]
+}];
+
+// ---------- 7.4 / 7.5 ----------
+FLOWS.GetFieldError = [{
+  name: 'GetFieldError', kind: 'function', app: '업무 App (Client Action, Function = Yes)',
+  desc: '화면 Expression 에서 바로 호출: GetFieldError(Errors, "Quantity")',
+  inputs: [['Errors', 'ValidationError List', ''], ['FieldName', 'Text', '']], outputs: [['Message', 'Text', '']],
+  flow: [
+    SYS('ListFilter', { List: 'Errors', Condition: 'ToLower(Errors.Current.FieldName) = ToLower(FieldName)' }),
+    ASG('SetMessage', { 'Message': 'If(ListFilter.FilteredList.Empty, "",\n ListFilter.FilteredList.Current.Message)' }),
+    END()
+  ]
+}];
+FLOWS.JoinErrorMessages = [{
+  name: 'JoinErrorMessages', kind: 'function', app: '업무 App (Client Action, Function = Yes)',
+  desc: '에러 목록을 줄바꿈으로 합친 메시지.',
+  inputs: [['Errors', 'ValidationError List', '']], outputs: [['Msg', 'Text', '']],
+  flow: [
+    FE('For Each Error', 'Errors', [
+      ASG('AppendLine', { 'Msg': 'Msg + If(Msg = "", "", NewLine())\n + "• " + Errors.Current.Message' })
+    ]),
+    END()
+  ]
+}];
+
+// ---------- 8.2 SaveOrder ----------
+FLOWS.SaveOrder = [{
+  name: 'SaveOrder', kind: 'server', app: 'Order App',
+  desc: '★ Fields는 반드시 서버에서 구성 (클라이언트 값 신뢰 금지). 지금 규칙이 없는 필드도 미리 넣어 두면 이후 규칙 추가 시 배포 불필요.',
+  inputs: [['Order', 'OrderInput', '화면 입력값']], outputs: [['Result', 'ValidationResult', ''], ['OrderId', 'Order Identifier', '']],
+  locals: [['Fields', 'FieldValue List', '']],
+  flow: [
+    SYS('ListAppend (×7)', {
+      '"CustomerId"': 'If(Order.CustomerId = NullIdentifier(), "", LongIntegerToText(Order.CustomerId))',
+      '"ProductId"': 'LongIntegerToText(Order.ProductId)',
+      '"Quantity"': 'IntegerToText(Order.Quantity)',
+      '"StartDate"': 'If(Order.StartDate = NullDate(), "", DateToText(Order.StartDate))',
+      '"EndDate"': 'If(Order.EndDate = NullDate(), "", DateToText(Order.EndDate))',
+      '"PayMethod"': 'Order.PayMethod',
+      '"TotalAmount"': 'DecimalToText(Order.TotalAmount)'
+    }, { note: 'List = Fields, Element = FieldValue{ Key = 왼쪽, Value = 오른쪽 } 로 ListAppend 7개 배치' }),
+    SRV('RunValidation', { Context: '"ORDER.SAVE"', Fields: 'Fields' }),
+    IF('검증 실패?', 'not RunValidation.Result.IsValid',
+      [ASG('ReturnErrors', { 'Result': 'RunValidation.Result' }), END('저장하지 않음')],
+      [N('entity', 'CreateOrUpdateOrder', { Source: 'Order → Order Entity 매핑' }),
+       ASG('SetOutput', { 'Result': 'RunValidation.Result', 'OrderId': 'CreateOrUpdateOrder.Id' }, { note: 'Warning 이 있으면 화면에서 안내' }),
+       END()])
+  ]
+}];
+
+// ---------- 8.3 SaveOnClick ----------
+FLOWS.SaveOnClick = [{
+  name: 'SaveOnClick', kind: 'client', app: 'Order App (화면 Client Action)',
+  desc: '저장 버튼 클릭. Errors는 화면 Local Variable (ValidationError List).',
+  locals: [['(Screen) Errors', 'ValidationError List', '필드별 메시지 표시용']],
+  flow: [
+    SRV('SaveOrder', { Order: '화면 입력 Structure' }),
+    ASG('SetErrors', { 'Errors': 'SaveOrder.Result.Errors' }),
+    IF('검증 실패?', 'not SaveOrder.Result.IsValid',
+      [N('message', 'Message', { Message: 'JoinErrorMessages(Errors)', Type: 'Error' }), END()], []),
+    IF('경고 있음?', 'not Errors.Empty',
+      [N('message', 'Message', { Message: 'JoinErrorMessages(Errors)', Type: 'Warning' })], []),
+    N('message', 'Message', { Message: '"저장되었습니다."', Type: 'Success' }),
+    N('destination', 'OrderList', { Destination: 'MainFlow\\OrderList' })
+  ],
+  handlers: [{ name: 'AllExceptions', flow: [N('message', 'Message', { Message: 'AllExceptions.ExceptionMessage', Type: 'Error' }), END()] }]
+}];
+
+// ===== 아이콘 (Service Studio 위젯을 참고해 단순화한 자체 아이콘) =====
+const W = '#fff';
+const ICON = {
+  start: ['#2e9e5b', 'circle', '<path d="M10 7l9 6-9 6z" fill="' + W + '"/>', 'Start'],
+  end: ['#3b4252', 'circle', '<rect x="8" y="8" width="10" height="10" rx="1.5" fill="' + W + '"/>', 'End'],
+  aggregate: ['#2f6fd6', 'sq', '<rect x="5" y="6" width="16" height="14" rx="1.5" fill="none" stroke="' + W + '" stroke-width="1.8"/><path d="M5 10.5h16M5 15h16M10.5 6v14" stroke="' + W + '" stroke-width="1.5"/>', 'Aggregate'],
+  assign: ['#ef8a17', 'sq', '<path d="M7 10h12M7 16h12" stroke="' + W + '" stroke-width="2.4" stroke-linecap="round"/>', 'Assign'],
+  server: ['#6d4bd1', 'sq', '<rect x="5" y="6" width="16" height="14" rx="2" fill="none" stroke="' + W + '" stroke-width="1.8"/><path d="M10 10l5 3-5 3z" fill="' + W + '"/>', 'Run Server Action'],
+  service: ['#0e93a3', 'sq', '<circle cx="13" cy="13" r="7.5" fill="none" stroke="' + W + '" stroke-width="1.7"/><path d="M5.5 13h15M13 5.5c-3.2 4-3.2 11 0 15M13 5.5c3.2 4 3.2 11 0 15" fill="none" stroke="' + W + '" stroke-width="1.4"/>', 'Run Service Action'],
+  client: ['#9a72ee', 'sq', '<rect x="5" y="6" width="16" height="11" rx="1.5" fill="none" stroke="' + W + '" stroke-width="1.8"/><path d="M10 20h6M13 17v3" stroke="' + W + '" stroke-width="1.8"/>', 'Run Client Action'],
+  system: ['#14967f', 'sq', '<path d="M6 8h2M6 13h2M6 18h2M10.5 8h9.5M10.5 13h9.5M10.5 18h9.5" stroke="' + W + '" stroke-width="2" stroke-linecap="round"/>', 'System Action'],
+  if: ['#e9b000', 'diamond', '<text x="13" y="17.5" text-anchor="middle" font-size="12" font-weight="700" fill="' + W + '">?</text>', 'If'],
+  switch: ['#d99100', 'diamond', '<path d="M13 8v4M13 12l-4 5M13 12l4 5M13 12v5" stroke="' + W + '" stroke-width="1.8" stroke-linecap="round"/>', 'Switch'],
+  foreach: ['#16a38a', 'circle', '<path d="M18.5 10.5A6 6 0 1 0 19 15" fill="none" stroke="' + W + '" stroke-width="2" stroke-linecap="round"/><path d="M19.5 6.5v4.5H15" fill="none" stroke="' + W + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>', 'For Each'],
+  raise: ['#d63b2f', 'sq', '<path d="M14.5 5L8 14h4.5L11 21l7-9.5h-4.5z" fill="' + W + '"/>', 'Raise Exception'],
+  handler: ['#b3261e', 'sq', '<path d="M13 5l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V8z" fill="none" stroke="' + W + '" stroke-width="1.8"/><path d="M13 9.5v4.5M13 16.5v.5" stroke="' + W + '" stroke-width="2" stroke-linecap="round"/>', 'Exception Handler'],
+  json: ['#8a43b8', 'sq', '<text x="13" y="17.5" text-anchor="middle" font-size="12" font-weight="700" fill="' + W + '">{ }</text>', 'JSON'],
+  message: ['#2b8bd8', 'sq', '<path d="M6 7h14v9h-8l-4 3.5V16H6z" fill="none" stroke="' + W + '" stroke-width="1.8" stroke-linejoin="round"/>', 'Message'],
+  entity: ['#2558b0', 'sq', '<ellipse cx="13" cy="8" rx="6.5" ry="2.5" fill="none" stroke="' + W + '" stroke-width="1.7"/><path d="M6.5 8v10c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5V8M6.5 13c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5" fill="none" stroke="' + W + '" stroke-width="1.7"/>', 'Entity Action'],
+  goto: ['#8a94a6', 'circle', '<path d="M8 13h9M14 9.5l3.5 3.5-3.5 3.5" fill="none" stroke="' + W + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>', '연결'],
+  destination: ['#34495e', 'sq', '<path d="M7 6h9v14H7z" fill="none" stroke="' + W + '" stroke-width="1.7"/><path d="M11 13h9M17 10l3 3-3 3" fill="none" stroke="' + W + '" stroke-width="1.8" stroke-linecap="round"/>', 'Destination'],
+  // 액션 종류 아이콘
+  k_service: null, k_server: null, k_client: null, k_function: null, k_rest: null
+};
+ICON.k_service = ICON.service; ICON.k_server = ICON.server; ICON.k_client = ICON.client;
+ICON.k_function = ['#9a72ee', 'sq', '<text x="13" y="18" text-anchor="middle" font-size="13" font-style="italic" font-weight="700" fill="' + W + '">fx</text>', 'Function'];
+ICON.k_rest = ['#0e93a3', 'sq', '<text x="13" y="17" text-anchor="middle" font-size="8.5" font-weight="800" fill="' + W + '">REST</text>', 'Exposed REST'];
+const KIND = { service: 'Service Action', server: 'Server Action', client: 'Client Action', function: 'Client Action (Function)', rest: 'Exposed REST Method' };
+
+function icon(t, size) {
+  const [c, shape, inner] = ICON[t]; size = size || 36;
+  let bg;
+  if (shape === 'circle') bg = '<circle cx="13" cy="13" r="12.5" fill="' + c + '"/>';
+  else if (shape === 'diamond') bg = '<rect x="4.2" y="4.2" width="17.6" height="17.6" rx="2.5" transform="rotate(45 13 13)" fill="' + c + '"/>';
+  else bg = '<rect x="0.5" y="0.5" width="25" height="25" rx="6" fill="' + c + '"/>';
+  return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 26 26">' + bg + inner + '</svg>';
+}
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const hl = s => esc(s)
+  .replace(/(&quot;|"[^"\n]*")/g, '<span class="s">$1</span>')
+  .replace(/\b(and|or|not|If|True|False)\b/g, '<span class="k">$1</span>')
+  .replace(/\n/g, '<br>');
+
+function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+
+function props(p) {
+  const keys = Object.keys(p).filter(k => k !== '_action');
+  if (!keys.length) return '';
+  return '<table class="pp">' + keys.map(k => '<tr><th>' + esc(k) + '</th><td>' + hl(p[k]) + '</td></tr>').join('') + '</table>';
+}
+
+function nodeEl(n) {
+  const lab = ICON[n.t][3];
+  const sub = n.p && n.p._action ? lab + ' · ' + n.p._action : lab;
+  const st = document.createElement('div');
+  st.className = 'step t-' + n.t;
+  st.innerHTML = '<div class="nd">' + icon(n.t) +
+    '<div class="bx"><div class="hd"><span class="ty">' + esc(sub) + '</span><span class="nm">' + esc(n.n) + '</span>' +
+    (n.anchor ? '<span class="anc">Ⓐ 연결 지점</span>' : '') + '</div>' +
+    (n.t === 'if' || n.t === 'switch' ? '' : props(n.p)) +
+    (n.t === 'if' ? '<div class="cond">' + hl(n.p.Condition) + '</div>' : '') +
+    (n.note ? '<div class="nt">💡 ' + esc(n.note) + '</div>' : '') + '</div></div>';
+  if (n.t === 'foreach') {
+    const cy = document.createElement('div'); cy.className = 'cycle';
+    cy.innerHTML = '<div class="cyl">↻ Cycle — 목록의 각 항목마다 반복</div>';
+    cy.appendChild(seq(n.body, false));
+    cy.appendChild(el('<div class="cyf">↺ 다음 항목으로 (마지막 항목 후 아래로 진행)</div>'));
+    st.appendChild(cy);
+  }
+  if (n.t === 'if') {
+    st.appendChild(branches([['True', n.yes, 'y'], ['False', n.no, 'n']]));
+  }
+  if (n.t === 'switch') {
+    const bs = n.cases.map((c, i) => ['Condition ' + (i + 1), c.f, 'c', c.c]);
+    bs.push(['Otherwise', n.other, 'o']);
+    st.appendChild(branches(bs, true));
+  }
+  return st;
+}
+
+function branches(list, vert) {
+  const w = document.createElement('div'); w.className = 'br' + (vert ? ' vert' : '');
+  list.forEach(([lab, flow, cls, cond]) => {
+    const col = document.createElement('div'); col.className = 'col ' + cls;
+    col.innerHTML = '<div class="bl">' + esc(lab) + '</div>' + (cond ? '<div class="cond">' + hl(cond) + '</div>' : '');
+    if (!flow || !flow.length) col.appendChild(el('<div class="pass">↓ 그대로 아래로 진행</div>'));
+    else col.appendChild(seq(flow, false));
+    w.appendChild(col);
+  });
+  return w;
+}
+
+function seq(flow, top) {
+  const s = document.createElement('div'); s.className = 'seq';
+  const f = flow.slice();
+  if (top) {
+    f.unshift({ t: 'start', n: 'Start', p: {} });
+    const last = f[f.length - 1];
+    if (!['end', 'raise', 'goto', 'destination'].includes(last.t) && !(last.t === 'if')) f.push({ t: 'end', n: 'End', p: {} });
+  }
+  f.forEach(n => s.appendChild(nodeEl(n)));
+  return s;
+}
+
+function sig(rows, cls, title) {
+  if (!rows || !rows.length) return '';
+  return '<div class="sg ' + cls + '"><div class="sgt">' + title + '</div><table>' +
+    rows.map(r => '<tr><td class="pn">' + esc(r[0]) + '</td><td class="pt">' + esc(r[1]) + '</td><td class="pd">' + esc(r[2] || '') + '</td></tr>').join('') + '</table></div>';
+}
+
+function actionCard(a) {
+  const c = document.createElement('div'); c.className = 'act k-' + a.kind;
+  c.innerHTML = '<div class="ah">' + icon('k_' + a.kind, 34) + '<div><div class="an">' + esc(a.name) +
+    '<span class="ak">' + KIND[a.kind] + '</span></div><div class="aa">📦 ' + esc(a.app) + '</div></div>' +
+    '<button class="tg" title="속성 접기/펼치기">속성 ▾</button></div>' +
+    (a.desc ? '<div class="ad">' + esc(a.desc) + '</div>' : '') +
+    '<div class="sgs">' + sig(a.inputs, 'in', '⇢ Input Parameters') + sig(a.outputs, 'out', '⇠ Output Parameters') + sig(a.locals, 'loc', '◦ Local Variables') + '</div>';
+  const body = document.createElement('div'); body.className = 'fl';
+  const main = document.createElement('div'); main.className = 'lane';
+  main.appendChild(el('<div class="lt">Action Flow</div>'));
+  main.appendChild(seq(a.flow, true));
+  body.appendChild(main);
+  (a.handlers || []).forEach(h => {
+    const ln = document.createElement('div'); ln.className = 'lane hdl';
+    ln.appendChild(el('<div class="lt">' + icon('handler', 22) + ' Exception Handler: ' + esc(h.name) + '</div>'));
+    ln.appendChild(seq(h.flow, false));
+    body.appendChild(ln);
+  });
+  c.appendChild(body);
+  c.querySelector('.tg').onclick = () => c.classList.toggle('collapsed');
+  return c;
+}
+
+function legend() {
+  const ks = ['start', 'end', 'aggregate', 'assign', 'if', 'switch', 'foreach', 'server', 'service', 'client', 'system', 'json', 'raise', 'handler', 'message', 'entity', 'destination', 'goto'];
+  const desc = { system: 'ListAppend / ListFilter / ListAny 등 내장 액션', goto: '연결선 이동 (다음 Cycle / 루프 탈출 / 되돌아가기)', json: 'JSON Serialize / Deserialize', entity: 'CreateOrUpdate 등 Entity Action', server: 'Server Action 호출', service: '다른 앱의 Service Action 호출', client: 'Client Action 호출' };
+  return '<div class="lg">' + ks.map(k => '<div class="li">' + icon(k, 28) + '<div><b>' + ICON[k][3] + '</b>' + (desc[k] ? '<span>' + desc[k] + '</span>' : '') + '</div></div>').join('') + '</div>';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.flowmount').forEach(m => {
+    const id = m.dataset.id;
+    if (id === 'LEGEND') { m.innerHTML = legend(); return; }
+    (FLOWS[id] || []).forEach(a => m.appendChild(actionCard(a)));
+  });
+  document.getElementById('collapseAll').onclick = e => {
+    const on = e.target.dataset.on !== '1'; e.target.dataset.on = on ? '1' : '0';
+    e.target.textContent = on ? '속성 모두 펼치기' : '속성 모두 접기';
+    document.querySelectorAll('.act').forEach(a => a.classList.toggle('collapsed', on));
+  };
+});
+
+document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('[data-ic]').forEach(e=>e.outerHTML=icon(e.dataset.ic,+e.dataset.s));
+document.querySelectorAll('pre').forEach(p=>{const b=document.createElement('button');b.className='cp';b.textContent='복사';b.onclick=()=>navigator.clipboard.writeText(p.querySelector('code').innerText).then(()=>{b.textContent='복사됨';setTimeout(()=>b.textContent='복사',1200)});p.appendChild(b)});
+document.getElementById('top').onclick=()=>scrollTo({top:0,behavior:'smooth'});
+const q=document.getElementById('q');q.oninput=()=>{const v=q.value.toLowerCase();document.querySelectorAll('nav li').forEach(li=>li.style.display=li.innerText.toLowerCase().includes(v)?'':'none')};
+const links=[...document.querySelectorAll('nav a')];const hs=links.map(a=>document.getElementById(decodeURIComponent(a.hash.slice(1)))).filter(Boolean);
+addEventListener('scroll',()=>{let cur=hs[0];hs.forEach(h=>{if(h.getBoundingClientRect().top<120)cur=h});links.forEach(a=>a.classList.toggle('on',cur&&decodeURIComponent(a.hash.slice(1))===cur.id))});});
+</script></body></html>

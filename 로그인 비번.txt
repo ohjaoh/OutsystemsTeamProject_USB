@@ -1,0 +1,2 @@
+플랫폼 관리자 id 비밀번호 : admin, admin
+회사 담당자 id 비밀번호 : manager_20, pass1234
